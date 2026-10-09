@@ -1,0 +1,387 @@
+<!doctype html><html lang="ka"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><style>body{margin:0}</style></head><body><title>Monday Guesty Sync</title>
+<style>
+  /* Layout: a working bench. The monday board on the left, what reaches Guesty on the right. */
+  :root {
+    --bg: #f3f4f8; --panel: #ffffff; --soft: #f7f8fb; --line: #e1e4ec; --text: #1b2130; --muted: #667089;
+    --field: #ffffff; --field-line: #c9cfdb; --code: #eef1f6; --new-row: #f3f2ff; --flash: #ffe7a0;
+    --monday: #5a55e8; --guesty: #0a8a76; --on-accent: #ffffff;
+    --blue: #1b58c4; --blue-bg: #e4edff; --green: #17753f; --green-bg: #dff4e6;
+    --amber: #a35d00; --amber-bg: #fff1d6; --violet: #6238b8; --violet-bg: #ede6ff;
+    --red: #ac241c; --red-bg: #fde5e3; --gray-bg: #e9ecf2;
+    --sans: "Segoe UI", "Noto Sans Georgian", "BPG Arial", Sylfaen, system-ui, sans-serif;
+    --mono: Consolas, "Cascadia Mono", "Noto Sans Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #12151c; --panel: #1a1e28; --soft: #1f2430; --line: #2c3342; --text: #e6e9f1; --muted: #98a1b6;
+    --field: #141821; --field-line: #3a4254; --code: #141821; --new-row: #23223a; --flash: #5a4a12;
+    --monday: #8d89ff; --guesty: #37c2aa; --on-accent: #10131a;
+    --blue: #9bbcff; --blue-bg: #1c2c4d; --green: #7fd9a2; --green-bg: #173524;
+    --amber: #f2be62; --amber-bg: #3d2e10; --violet: #c3a8ff; --violet-bg: #2d2350;
+    --red: #ff9d95; --red-bg: #45201d; --gray-bg: #2a303d; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #12151c; --panel: #1a1e28; --soft: #1f2430; --line: #2c3342; --text: #e6e9f1; --muted: #98a1b6;
+    --field: #141821; --field-line: #3a4254; --code: #141821; --new-row: #23223a; --flash: #5a4a12;
+    --monday: #8d89ff; --guesty: #37c2aa; --on-accent: #10131a;
+    --blue: #9bbcff; --blue-bg: #1c2c4d; --green: #7fd9a2; --green-bg: #173524;
+    --amber: #f2be62; --amber-bg: #3d2e10; --violet: #c3a8ff; --violet-bg: #2d2350;
+    --red: #ff9d95; --red-bg: #45201d; --gray-bg: #2a303d; color-scheme: dark }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans); padding-inline: 16px; padding-block: 14px 20px; }
+  .top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .top h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  .top p { margin: 0; color: var(--muted); flex: 1 1 280px; min-width: 0; }
+  .bench { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; overflow: hidden; }
+  section > h2 { margin: 0; padding: 11px 16px; font-size: 14px; font-weight: 650; border-bottom: 1px solid var(--line);
+                 display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  section > h2 small { font-weight: 400; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .scroll { overflow: auto; max-height: 68vh; }
+  form.add { display: grid; grid-template-columns: 2.2fr 0.9fr 1.3fr 0.9fr 1fr auto; gap: 8px; padding: 12px 16px;
+             border-bottom: 1px solid var(--line); background: var(--soft); }
+  form.add label, form.add .err { grid-column: 1 / -1; font-weight: 600; color: var(--muted); font-size: 12px; }
+  form.add .err { color: var(--red); }
+  input, select, button { font: inherit; color: var(--text); border: 1px solid var(--field-line); border-radius: 6px;
+                          padding: 6px 8px; background: var(--field); min-width: 0; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--monday); outline-offset: 1px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--monday); border-color: var(--monday); color: var(--on-accent); font-weight: 600; padding: 6px 14px; }
+  button.ok { background: var(--guesty); border-color: var(--guesty); color: var(--on-accent); font-weight: 600; }
+  .bar { padding: 8px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+  .bar input { flex: 1; }
+  table { border-collapse: collapse; width: 100%; min-width: 660px; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  th { position: sticky; top: 0; background: var(--soft); text-align: left; font-weight: 600; color: var(--muted);
+       font-size: 12px; padding: 7px 8px; border-bottom: 1px solid var(--line); z-index: 1; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; overflow: hidden; text-overflow: ellipsis; }
+  td { white-space: nowrap; }
+  td:last-child { white-space: normal; }
+  td select { padding: 3px 4px; width: 100%; }
+  tr.new td { background: var(--new-row); }
+  tr.flash td, .card.flash { animation: flash 2.2s ease-out; }
+  @keyframes flash { from { background: var(--flash); } }
+  @media (prefers-reduced-motion: reduce) { tr.flash td, .card.flash { animation: none; } }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap;
+          background: var(--gray-bg); color: var(--text); margin: 0 4px 3px 0; border: 0; }
+  button.chip { cursor: pointer; }
+  .chip.blue { background: var(--blue-bg); color: var(--blue); } .chip.green { background: var(--green-bg); color: var(--green); }
+  .chip.amber { background: var(--amber-bg); color: var(--amber); } .chip.violet { background: var(--violet-bg); color: var(--violet); }
+  .chip.red { background: var(--red-bg); color: var(--red); }
+  .tabs { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 7px 10px; color: var(--muted); }
+  .tabs button.on { color: var(--text); font-weight: 650; border-bottom-color: var(--guesty); }
+  .tabs b { font-weight: 600; color: var(--muted); margin-left: 4px; }
+  .card { padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .card .t { font-weight: 600; overflow-wrap: anywhere; }
+  .card .m { color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+  .card .act { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  details { margin-top: 6px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  pre { margin: 6px 0 0; padding: 8px 10px; background: var(--code); border-radius: 6px; font: 12px/1.4 var(--mono);
+        white-space: pre-wrap; overflow-wrap: anywhere; }
+  .empty { padding: 28px 16px; color: var(--muted); text-align: center; }
+  .log { min-width: 0; } .log td { font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+  .log td:first-child { color: var(--muted); white-space: nowrap; width: 76px; }
+  @media (max-width: 960px) { .bench { grid-template-columns: minmax(0, 1fr); } form.add { grid-template-columns: 1fr 1fr; } }
+</style>
+
+<div class="top">
+  <h1>monday → Guesty</h1>
+  <span class="chip blue">დემო</span>
+  <p>სატესტო მონაცემებია: ბინები და ჯავშნის კოდები გამოგონილია. ნამდვილ სისტემებში არაფერი იწერება.</p>
+  <button id="reset" type="button">თავიდან დაწყება</button>
+</div>
+<div class="bench">
+  <section>
+    <h2><span class="dot" style="background:var(--monday)"></span>monday <small>ბუღალტერია (სატესტო მონაცემები)</small></h2>
+    <form class="add" id="add">
+      <label for="f-name">ახალი ჩანაწერი monday-ში</label>
+      <input id="f-name" required placeholder="სახელი, მაგ.: ყაზბეგი 21 / კონდიციონერი არ მუშაობს">
+      <select id="f-label" aria-label="label"></select>
+      <input id="f-nick" list="nicks" placeholder="ბინა (Guesty nickname)" aria-label="ბინა">
+      <input id="f-amount" placeholder="თანხა: 55 ან 32 EUR" aria-label="თანხა">
+      <select id="f-status" aria-label="სტატუსი"></select>
+      <button class="primary">დამატება</button>
+      <datalist id="nicks"></datalist>
+    </form>
+    <div class="bar"><input id="search" type="search" placeholder="ძებნა" aria-label="ძებნა"><span id="count" class="chip"></span></div>
+    <div class="scroll">
+      <table>
+        <colgroup><col><col style="width:68px"><col style="width:80px"><col style="width:128px"><col style="width:126px"><col style="width:168px"></colgroup>
+        <thead><tr><th>სახელი</th><th>label</th><th>თანხა</th><th>ბინა</th><th>სტატუსი</th><th>Guesty</th></tr></thead>
+        <tbody id="items"></tbody>
+      </table>
+    </div>
+  </section>
+  <section>
+    <h2><span class="dot" style="background:var(--guesty)"></span>Guesty <small>რა ჩაიწერებოდა</small></h2>
+    <div class="tabs" id="tabs"></div>
+    <div class="scroll" id="pane"></div>
+  </section>
+</div>
+
+<script>
+// ------------------------------------------------------------------ sample board (invented)
+const FLATS = [["მარჯანიშვილი 16", "Marjanishvili 16"], ["ფალიაშვილი 8-3", "Paliashvili 8-3"], ["ყაზბეგი 21", "Kazbegi 21"],
+  ["პეკინი 5-14", "Pekini 5-14"], ["ნუცუბიძე 77", "Nutsubidze 77"], ["თამარ მეფე 14", "Tamar Mepe 14"],
+  ["წერეთელი 60-2", "Tsereteli 60-2"], ["ვაჟა-ფშაველა 33", "Vazha-Pshavela 33"], ["დოლიძე 28", "Dolidze 28"],
+  ["ბათუმი - გორგილაძე 90", "BT. Gorgiladze 90"], ["ბათუმი - მელიქიშვილი 4", "BT. Melikishvili 4"],
+  ["გუდაური - ახალი გუდაური 310", "Guda. New Gudauri 310"]];
+const BOARD = [
+  ["მარჯანიშვილი 16 / ხალიჩის რეცხვა / თანხა ჯერ არ მოსულა", "ხარჯი", "", "Marjanishvili 16", "გასარკვევია", "2026-08-04"],
+  ["ყაზბეგი 21 / კონდიციონერი არ მუშაობს", "ხარჯი", "", "Kazbegi 21", "Working on it", "2026-08-24"],
+  ["პეკინი 5-14 / გასარეცხია ფარდა / 20 ლარი დიასახლისს / მეპატრონე", "ხარჯი", "", "Pekini 5-14", "", "2026-08-24"],
+  ["ნუცუბიძე 77 / ჩაიდანი / მეპატრონე", "ხარჯი", "55", "Nutsubidze 77", "Done", "2026-08-02"],
+  ["თამარ მეფე 14 / 3 ღვინის ჭიქა / მეპატრონე", "ხარჯი", "9", "Tamar Mepe 14", "Done", "2026-08-02"],
+  ["წერეთელი 60-2 / მოპი / მეპატრონე", "ხარჯი", "23.35", "Tsereteli 60-2", "Done", "2026-08-08"],
+  ["ვაჟა-ფშაველა 33 / მიკროტალღური / მეპატრონე", "ხარჯი", "189", "Vazha-Pshavela 33", "Done", "2026-08-04"],
+  ["დოლიძე 28 / დეზინფექცია / 250 ლარი / მეპატრონე", "ხარჯი", "250", "Dolidze 28", "Done", "2026-08-13"],
+  ["ფალიაშვილი 8-3 / კონდიციონერის მონტაჟი", "ხარჯი", "=420/0.784", "Paliashvili 8-3", "Done", "2026-08-11"],
+  ["Kazbegi 21 მეპატრონეს შემდეგ Cleaning fee €32", "Cleaning", "32 EUR", "Kazbegi 21", "Done", "2026-08-01"],
+  ["BT. Gorgiladze 90 მეპატრონეს შემდეგ Cleaning fee €26", "Cleaning", "26 EUR", "BT. Gorgiladze 90", "Done", "2026-08-14"],
+  ["Guda. New Gudauri 310 Cleaning fee €45", "Cleaning", "45 EUR", "Guda. New Gudauri 310", "Done", "2026-08-08"],
+  ["BT. Melikishvili 4 მეპატრონეს შემდეგ Cleaning fee €31", "Cleaning", "", "BT. Melikishvili 4", "", "2026-08-23"],
+  ["მარჯანიშვილი 16 / ფენი / ოფისის ხარჯი", "Office", "55", "Marjanishvili 16", "Done", "2026-08-02"],
+  ["წყალი", "Office", "=11.90/0.784", "", "Done", "2026-08-18"],
+  ["HMA4K9TQ2W/Refund 35 EUR", "Refund", "", "Pekini 5-14", "", ""],
+  ["BC-7hQmW2xLp/Refund 60 GEL", "Refund", "60 ლარი", "Tamar Mepe 14", "Done", "2026-08-18"],
+  ["HMR8ZD3K5N/ €82.86 euro refund", "Refund", "", "Dolidze 28", "", ""],
+  ["BC-Xt4nB9aKe/ნუცუბიძე 77/ 138.23", "Refund", "", "Nutsubidze 77", "გასარკვევია", ""],
+  ["თამარ მეფე 14 / ბალიში 2 ცალი / გავატანე", "ხარჯი", "", "Tamar Mepe 14", "", "2026-08-11"],
+  ["ვაჟა-ფშაველა 33 / საჭიროა ახალი აბაზანის ფარდა / მეპატრონე", "ხარჯი", "", "Vazha-Pshavela 33", "", "2026-08-11"],
+  ["წერეთელი 60-2 / გამოსაცვლელია ტოსტერი / მეპატრონე", "ხარჯი", "", "Tsereteli 60-2", "", "2026-08-12"],
+  ["ნუცუბიძე 77 კონდიციონერი - გავუნაწილოთ 2 თვეზე", "ხარჯი", "1090", "Nutsubidze 77", "Done", "2026-08-05"],
+  ["ყაზბეგი ახალი ბინა / მტვერსასრუტი / მეპატრონე", "ხარჯი", "", "", "გასარკვევია", "2026-08-13"],
+  ["დოლიძე 28 / უთო / მეპატრონე", "ხარჯი", "", "Dolidze 28", "Done", "2026-08-20"],
+  ["HMQ2W7ERT9 / ყაზბეგი 21", "ანაზღაურებულია", "", "Kazbegi 21", "", ""],
+  ["BT. Gorgiladze 90 / სადარბაზოს დალაგება / 20 ლარი დიასახლისს / მეპატრონე", "ხარჯი", "", "BT. Gorgiladze 90", "", "2026-08-19"],
+  ["მარჯანიშვილი 16 / საშრობი / მეპატრონე", "ხარჯი", "48", "Marjanishvili 16", "Done", "2026-08-03"]];
+
+// ------------------------------------------------------------------ rules (same as the server version)
+const LABELS = ["ხარჯი", "Cleaning", "Office", "Refund"], STATUSES = ["", "გასარკვევია", "Working on it", "Done"];
+const SYNC = new Set(["ხარჯი", "Cleaning", "Office"]);
+const CODE = () => /(?<![A-Za-z0-9])(HM[A-Z0-9]{8}|BC-[A-Za-z0-9]{8,10}|GY-[A-Za-z0-9]{8})(?![A-Za-z0-9])/g;
+const NUM = "\\d+(?:,\\d{3})*(?:\\.\\d+)?", CUR_ALT = "€|eur|euro|ევრო|gel|ლარი|lari|₾";
+const CUR = [["EUR", ["eur", "euro", "€", "ევრო"]], ["GEL", ["gel", "ლარ", "lari", "₾"]], ["USD", ["usd", "$"]]];
+const TASK_TYPES = [["sanitation", ["დეზინფექ"]], ["cleaning", ["რეცხ", "ხალიჩ", "დალაგებ", "cleaning"]],
+  ["maintenance", ["კონდიციონერ", "კონდენციონერ", "მონტაჟ", "შეკეთ", "გამოსაცვლელ", "გაფუჭ", "არ მუშაობ", "ჩიპ"]]];
+const CATEGORIES = [["pest_control", ["დეზინფექ"]], ["laundry", ["რეცხ", "ხალიჩ"]], ["cleaning", ["დალაგებ"]],
+  ["repairs_maintenance", ["კონდიციონერ", "კონდენციონერ", "მონტაჟ", "შეკეთ", "გამოსაცვლელ", "გაფუჭ", "ჩიპ"]]];
+const PMC = ["ოფისის ხარჯი"], SPLIT = /\d+\s*თვეზე/;
+const round2 = v => Math.round(v * 100) / 100;
+function currency(text) {
+  const t = text.toLowerCase();
+  for (const [c, words] of CUR) if (words.some(w => t.includes(w))) return c;
+  return /\d\s*ლ$/.test(t.trim()) ? "GEL" : null;
+}
+function parseAmount(raw) {
+  const t = String(raw || "").trim();
+  if (!t) return null;
+  if (t[0] === "=") {
+    const m = /^=\s*(\d+(?:\.\d+)?)\s*([-+*\/])\s*(\d+(?:\.\d+)?)$/.exec(t);
+    if (!m) return null;
+    const a = +m[1], b = +m[3], v = m[2] === "+" ? a + b : m[2] === "-" ? a - b : m[2] === "*" ? a * b : a / b;
+    return isFinite(v) ? {value: round2(v), currency: "GEL", assumed: true} : null;
+  }
+  const m = new RegExp(NUM).exec(t);
+  if (!m) return null;
+  const c = currency(t);
+  return {value: round2(+m[0].replace(/,/g, "")), currency: c || "GEL", assumed: !c};
+}
+function amountFromName(name) {
+  const m = new RegExp(`(?:(${CUR_ALT})\\s*(${NUM}))|(?:(${NUM})\\s*(${CUR_ALT}))`, "i").exec((name || "").replace(CODE(), " "));
+  if (!m) return null;
+  const [num, cur] = m[2] ? [m[2], m[1]] : [m[3], m[4]];
+  return {value: round2(+num.replace(/,/g, "")), currency: currency(cur), assumed: false};
+}
+const pick = (name, table, def) => { const low = name.toLowerCase(); for (const [v, ws] of table) if (ws.some(w => low.includes(w))) return v; return def; };
+const title = name => name.split(/\s+/).join(" ").trim().slice(0, 120);
+function plan(item) {
+  const label = item.label.trim(), name = item.name.trim(), nick = item.nickname.trim();
+  if (!SYNC.has(label) && label !== "Refund") return {actions: [], hold: `label «${label || "—"}» Guesty-ში არ გადადის`};
+  if (label === "Refund") {
+    const codes = name.match(CODE()) || [];
+    if (!codes.length) return {actions: [], hold: "ჯავშნის კოდი არ არის"};
+    const res = codes.map(c => G.reservations[c]).find(Boolean);
+    if (!res) return {actions: [], hold: `ჯავშანი ${codes[0]} Guesty-ში ვერ მოიძებნა`};
+    const a = parseAmount(item.amount) || amountFromName(name);
+    const money = a ? `${a.value} ${a.currency || ""}`.trim() : "თანხა არ არის";
+    return {actions: [{kind: "refund", payload: {title: title(`Refund ${money} · ${codes[0]}`), description: `monday: ${name}`,
+      type: "administration", priority: "high", reservationId: res.id, listingId: res.listingId}}], hold: null};
+  }
+  if (!nick) return {actions: [], hold: "ბინა არ არის მითითებული"};
+  const listingId = G.listings[nick];
+  if (!listingId) return {actions: [], hold: `nickname «${nick}» Guesty-ში არ არის`};
+  const done = item.status === "Done", flat = item.apartment || nick;
+  const actions = [{kind: "task", done, payload: {title: title(name), description: `monday: ${label} · ${flat}`,
+    type: label === "Cleaning" ? "cleaning" : pick(name, TASK_TYPES, "inventory"), priority: "medium", listingId}}];
+  if (!done) return {actions, hold: null};
+  const a = parseAmount(item.amount);
+  if (!a) return {actions, hold: "Done, მაგრამ თანხა არ არის"};
+  if (SPLIT.test(name)) return {actions, hold: "თანხა რამდენიმე თვეზე ნაწილდება: ხელით ჩასაწერია"};
+  const pmc = label === "Office" || PMC.some(w => name.toLowerCase().includes(w));
+  actions.push({kind: "expense", currency: a.currency, payload: {name: title(name), description: `monday: ${label} · ${flat}`,
+    amount: a.value, recognitionDate: item.date || item.created, category: label === "Cleaning" ? "owner_cleaning"
+    : pick(name, CATEGORIES, "supplies_purchases"), referenceId: `monday:${item.id}`,
+    expenseShare: {shareSplit: pmc ? 0 : 1, listingId}}});
+  return {actions, hold: null};
+}
+
+// ------------------------------------------------------------------ engine: one item owns at most one of each
+const ENDPOINTS = {task: "POST /v1/tasks-open-api/create-single-task",
+                   expense: "POST /v1/business-models-api/transactions/expenses-by-listing"};
+let G, S, seq = 0;
+const oid = () => Array.from({length: 24}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+const today = () => new Date().toISOString().slice(0, 10);
+function log(id, text, level) { S.log.unshift({ts: new Date().toTimeString().slice(0, 8), id, text, level: level || "info"}); }
+function sync(item) {
+  const id = item.id, p = plan(item), L = S.links[id] || (S.links[id] = {});
+  for (const a of p.actions) {
+    const h = JSON.stringify(a.payload);
+    if (a.kind === "task") {
+      const l = L.task;
+      if (a.done) { if (l && l.state === "open") { G.tasks[l.gid].status = "completed"; l.state = "completed"; l.hash = h; log(id, "Guesty task დაიხურა (Done)"); } }
+      else if (!l) { const gid = oid(); G.tasks[gid] = {id: gid, item: id, payload: a.payload, status: "confirmed", n: ++seq};
+        L.task = {gid, hash: h, state: "open"}; log(id, `Guesty-ში task შეიქმნა (${a.payload.type})`); }
+      else if (l.state === "completed") { G.tasks[l.gid].status = "confirmed"; G.tasks[l.gid].payload = a.payload; l.state = "open"; l.hash = h; log(id, "Guesty task ხელახლა გაიხსნა"); }
+      else if (l.hash !== h) { G.tasks[l.gid].payload = a.payload; l.hash = h; log(id, "Guesty task განახლდა"); }
+    } else if (a.kind === "expense") {
+      const l = L.expense;
+      if (!l) { const gid = oid(); G.expenses[gid] = {id: gid, item: id, payload: a.payload, currency: a.currency, n: ++seq};
+        L.expense = {gid, hash: h, state: "written"};
+        log(id, `Guesty-ში ხარჯი ჩაიწერა: ${a.payload.amount} ${a.currency}, ${a.payload.category}, ${a.payload.expenseShare.shareSplit ? "იხდის მეპატრონე" : "იხდის კომპანია"}`); }
+      else if (l.hash !== h) { l.hash = h; l.state = "changed"; log(id, "ხარჯი Guesty-ში უკვე ჩაწერილია, monday-ში კი შეიცვალა: ხელით შესამოწმებელია", "hold"); }
+    } else {
+      const ap = S.approvals[id];
+      if (!ap) { S.approvals[id] = {payload: a.payload, hash: h, status: "pending", n: ++seq}; log(id, "Refund ელოდება დადასტურებას", "wait"); }
+      else if (ap.status === "pending" && ap.hash !== h) { ap.payload = a.payload; ap.hash = h; }
+    }
+  }
+  if (p.hold) { if (S.holds[id] !== p.hold) { S.holds[id] = p.hold; log(id, `გაჩერდა: ${p.hold}`, "hold"); } }
+  else delete S.holds[id];
+}
+function decide(id, approve) {
+  const ap = S.approvals[id];
+  if (!ap || ap.status !== "pending") return;
+  if (!approve) { ap.status = "rejected"; log(id, "Refund უარყოფილია"); return; }
+  const gid = oid();
+  G.tasks[gid] = {id: gid, item: id, payload: ap.payload, status: "confirmed", n: ++seq};
+  S.links[id] = Object.assign(S.links[id] || {}, {refund: {gid, hash: ap.hash, state: "open"}});
+  ap.status = "approved"; log(id, "Refund დადასტურდა: Guesty-ში task შეიქმნა");
+}
+function start() {
+  seq = 0;
+  G = {listings: {}, titles: {}, nick: {}, reservations: {}, tasks: {}, expenses: {}};
+  for (const [t, n] of FLATS) { const id = oid(); G.listings[n] = id; G.titles[n] = t; G.nick[id] = n; }
+  S = {items: [], links: {}, holds: {}, approvals: {}, log: []};
+  BOARD.forEach(([name, label, amount, nickname, status, date], i) => {
+    S.items.push({id: "r" + (i + 1), origin: "board", name, label, amount, nickname, status, date, created: date || "2026-08-26",
+                  apartment: G.titles[nickname] || ""});
+    for (const c of name.match(CODE()) || []) if (label === "Refund") G.reservations[c] = {id: oid(), listingId: G.listings[nickname]};
+  });
+  S.items.forEach(sync);
+}
+
+// ------------------------------------------------------------------ page
+const TABS = [["tasks", "Tasks"], ["expenses", "ხარჯები"], ["approvals", "დასადასტურებელი"], ["holds", "გაჩერებული"], ["log", "ჟურნალი"]];
+let tab = "tasks", flash = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const byId = id => S.items.find(i => i.id === id);
+const sorted = o => Object.values(o).sort((a, b) => b.n - a.n);
+function badges(i) {
+  const l = S.links[i.id] || {}, ap = S.approvals[i.id], out = [];
+  const b = (t, cls, text) => out.push(`<button type="button" class="chip ${cls}" data-go="${t}" data-item="${esc(i.id)}">${text}</button>`);
+  if (l.task && l.task.state === "open") b("tasks", "blue", "task");
+  if (l.task && l.task.state === "completed") b("tasks", "", "task დახურულია");
+  if (l.expense && l.expense.state === "written") b("expenses", "green", "ხარჯი ჩაწერილია");
+  if (l.expense && l.expense.state === "changed") b("expenses", "amber", "ხარჯი შეიცვალა");
+  if (ap && ap.status === "pending") b("approvals", "violet", "ელოდება დადასტურებას");
+  if (ap && ap.status === "approved") b("tasks", "blue", "Refund task");
+  if (ap && ap.status === "rejected") b("approvals", "", "უარყოფილია");
+  if (S.holds[i.id]) b("holds", "amber", "გაჩერდა");
+  return out.join("");
+}
+function renderItems() {
+  const f = $("search").value.trim().toLowerCase();
+  const rows = S.items.filter(i => !f || `${i.name} ${i.nickname} ${i.apartment} ${i.label}`.toLowerCase().includes(f));
+  $("count").textContent = rows.length + " / " + S.items.length;
+  $("items").innerHTML = rows.map(i => `
+    <tr class="${i.origin === "demo" ? "new" : ""} ${flash === i.id ? "flash" : ""}" data-id="${esc(i.id)}">
+      <td class="name" title="${esc(i.name)}">${esc(i.name)}</td><td>${esc(i.label)}</td>
+      <td title="${esc(i.amount)}">${esc(i.amount)}</td><td title="${esc(i.apartment)}">${esc(i.nickname)}</td>
+      <td><select id="st-${esc(i.id)}" data-status="${esc(i.id)}" aria-label="სტატუსი">${STATUSES.map(s =>
+        `<option ${s === i.status ? "selected" : ""} value="${esc(s)}">${esc(s || "—")}</option>`).join("")}</select></td>
+      <td title="${esc(S.holds[i.id] || "")}">${badges(i)}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">ჯერ არაფერია</td></tr>`;
+}
+const request = (endpoint, payload) => `<details><summary>მოთხოვნა</summary><pre>${esc(endpoint)}\n${esc(JSON.stringify(payload, null, 2))}</pre></details>`;
+const card = (id, html) => `<div class="card ${flash === id ? "flash" : ""}" data-item="${esc(id)}">${html}</div>`;
+const PANES = {
+  tasks: () => sorted(G.tasks).map(t => card(t.item, `<div class="t">${esc(t.payload.title)}</div>
+    <div class="m"><span class="chip ${t.status === "completed" ? "" : "blue"}">${t.status === "completed" ? "დახურული" : "ღია"}</span>
+    <span class="chip">${esc(t.payload.type)}</span>${t.payload.priority === "high" ? `<span class="chip red">high</span>` : ""}
+    <span class="chip">${esc(G.nick[t.payload.listingId] || "")}</span></div>${request(ENDPOINTS.task, t.payload)}`)),
+  expenses: () => sorted(G.expenses).map(e => card(e.item, `<div class="t">${esc(e.payload.amount)} ${esc(e.currency)} · ${esc(e.payload.name)}</div>
+    <div class="m"><span class="chip green">${esc(e.payload.category)}</span>
+    <span class="chip">${e.payload.expenseShare.shareSplit ? "იხდის მეპატრონე" : "იხდის კომპანია"}</span>
+    <span class="chip">${esc(G.nick[e.payload.expenseShare.listingId] || "")}</span><span class="chip">${esc(e.payload.recognitionDate)}</span></div>
+    ${request(ENDPOINTS.expense, e.payload)}`)),
+  approvals: () => Object.entries(S.approvals).sort((a, b) => b[1].n - a[1].n).map(([id, a]) => card(id, `<div class="t">${esc(a.payload.title)}</div>
+    <div class="m">${esc(byId(id).name)}</div>
+    ${a.status === "pending" ? `<div class="act"><button type="button" class="ok" data-decide="approve" data-item="${esc(id)}">დადასტურება</button>
+      <button type="button" data-decide="reject" data-item="${esc(id)}">უარყოფა</button></div>`
+    : `<div class="m"><span class="chip ${a.status === "approved" ? "green" : ""}">${a.status === "approved" ? "დადასტურებულია" : "უარყოფილია"}</span></div>`}
+    ${request(ENDPOINTS.task, a.payload)}`)),
+  holds: () => Object.entries(S.holds).reverse().map(([id, reason]) => card(id, `<div class="t">${esc(byId(id).name)}</div>
+    <div class="m"><span class="chip amber">${esc(reason)}</span></div>`)),
+  log: () => S.log.length ? [`<table class="log"><tbody>${S.log.map(l => `<tr><td>${esc(l.ts)}</td><td><span class="chip ${
+    ({hold: "amber", wait: "violet"})[l.level] || "green"}" style="white-space:normal">${esc(l.text)}</span><br>${esc(byId(l.id).name)}</td></tr>`).join("")}</tbody></table>`] : []
+};
+function renderPane() {
+  const n = {tasks: Object.keys(G.tasks).length, expenses: Object.keys(G.expenses).length, holds: Object.keys(S.holds).length,
+             log: S.log.length, approvals: Object.values(S.approvals).filter(a => a.status === "pending").length};
+  $("tabs").innerHTML = TABS.map(([k, t]) => `<button type="button" class="${k === tab ? "on" : ""}" data-tab="${k}">${t}<b>${n[k]}</b></button>`).join("");
+  $("pane").innerHTML = PANES[tab]().join("") || `<div class="empty">ჯერ არაფერია</div>`;
+  const hit = flash && $("pane").querySelector(".flash");
+  if (hit) $("pane").scrollTop = Math.max(0, hit.offsetTop - $("pane").offsetTop - 40);
+}
+function render() { renderItems(); renderPane(); }
+function follow(id) {
+  const l = S.links[id] || {}, ap = S.approvals[id];
+  tab = S.holds[id] ? "holds" : ap && ap.status === "pending" ? "approvals" : l.expense ? "expenses" : l.task ? "tasks" : "log";
+  flash = id; render(); flash = null;
+}
+$("f-label").innerHTML = LABELS.map(l => `<option>${esc(l)}</option>`).join("");
+$("f-status").innerHTML = STATUSES.map(s => `<option value="${esc(s)}">${esc(s || "სტატუსი: —")}</option>`).join("");
+$("nicks").innerHTML = FLATS.map(([, n]) => `<option value="${esc(n)}"></option>`).join("");
+$("add").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("f-name").value.trim();
+  if (!name) return;
+  const nickname = $("f-nick").value.trim();
+  const item = {id: "n" + (S.items.length + 1), origin: "demo", name, label: $("f-label").value, amount: $("f-amount").value.trim(),
+                nickname, status: $("f-status").value, date: "", created: today(), apartment: G.titles[nickname] || ""};
+  S.items.unshift(item); sync(item);
+  $("f-name").value = $("f-amount").value = ""; $("search").value = "";
+  follow(item.id);
+  document.querySelector(".scroll").scrollTop = 0;
+});
+$("items").addEventListener("change", e => {
+  const id = e.target.dataset.status;
+  if (id === undefined) return;
+  const item = byId(id); item.status = e.target.value; sync(item); follow(id);
+});
+document.addEventListener("click", e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.tab) { tab = t.dataset.tab; renderPane(); }
+  else if (t.dataset.go) { tab = t.dataset.go; flash = t.dataset.item; renderPane(); flash = null; }
+  else if (t.dataset.decide) {
+    decide(t.dataset.item, t.dataset.decide === "approve");
+    if (t.dataset.decide === "approve") { tab = "tasks"; flash = t.dataset.item; }
+    render(); flash = null;
+  } else if (t.id === "reset") { start(); tab = "tasks"; $("search").value = ""; render(); }
+});
+$("search").addEventListener("input", renderItems);
+start(); render();
+</script>
+</body></html>
